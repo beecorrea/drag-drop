@@ -1,78 +1,127 @@
 // Adaptation of https://www.kirupa.com/html5/drag.htm for multiple elements.
+class Dragger {
+  constructor(draggableClass, containerSelector) {
+    // Inject selector for the listener container.
+    this._containerSelector = containerSelector;
+    // Inject class for the draggable items.
+    this._draggableClass = draggableClass;
 
-// The id of the current item being dragged.
-let dragItemId;
-// Flag to check if a drag is currently happening.
-let shouldDrag = false;
-// Store information of the items movements.
-// The first time an item is dragged (i.e. mousedown), it is saved to memory.
-// When it is dragged around or dropped, its position is updated on this variable.
-let items = {};
-// Counter for uuid.
-let counter = 0;
-
-function dragStart(e) {
-  // Prevents from dragging container (should only drag elements).
-  if (!e.target.classList.contains('item')) return;
-
-  // Get the event target UUID.
-  let { _uuid } = e.target;
-  // Element wasn't dragged before, initialize it.
-  if (_uuid == undefined) {
-    // Set the target id.
-    // Is this a bad practice?
-    e.target._uuid = counter++;
-
-    // Initialize the memory for the element's position.
-    items[e.target._uuid] = { element: e.target };
-
-    // Initialize the movements offsets.
-    items[e.target._uuid].endX = 0;
-    items[e.target._uuid].endY = 0;
+    // The id of the current item being dragged.
+    this.dragItemId = null;
+    // Flag to check if a drag is currently happening.
+    this.shouldDrag = false;
+    // Store information of the items movements.
+    // The first time an item is dragged (i.e. mousedown), it is saved to memory.
+    // When it is dragged around or dropped, its position is updated on this variable.
+    this.items = {};
+    // Counter for uuid.
+    this.counter = 0;
+    this.container = null;
+    this.init = this.init.bind(this);
+    this.dragStart = this.dragStart.bind(this);
+    this.drag = this.drag.bind(this);
+    this.move = this.move.bind(this);
+    this.dragEnd = this.dragEnd.bind(this);
   }
 
-  // Sets the element's id to identify the current dragged item.
-  dragItemId = e.target._uuid;
-  // Get the mousedown event position on the client screen.
-  const { clientX, clientY } = e;
-  // Set the start of the movement to the current position minus the screen offset from the screen
-  // In future iterations, this subtraction is done so the subtraction in drag() still accounts for
-  // the previous movement.  If not, the movements would not be "cumulative", and every new drag
-  // would translate the element from its original render position. This happens because we move
-  // the element by changing its transform property. We're not "actually" moving the element between positions.
-  items[dragItemId].initialX = clientX - items[dragItemId].endX;
-  items[dragItemId].initialY = clientY - items[dragItemId].endY;
-  shouldDrag = true;
-}
+  /**
+   *
+   * Initializes the event listeners.
+   * @memberof Dragger
+   */
+  init() {
+    this.container = document.querySelector(this._containerSelector);
+    this.container.addEventListener('mousedown', this.dragStart);
+    this.container.addEventListener('mousemove', this.drag);
+    this.container.addEventListener('mouseup', this.dragEnd);
+  }
 
-function drag(e) {
-  if (shouldDrag) {
-    e.preventDefault();
+  /**
+   *
+   * Handles the dragging start. Sets up initial values for the movement
+   * and registers the draggable item if it's the first time.
+   * @memberof Dragger
+   */
+  dragStart(e) {
+    // Prevents from dragging container (should only drag elements).
+    if (!e.target.classList.contains(this._draggableClass)) return;
 
-    // Get drag position.
+    // Get the event target UUID.
+    let { _uuid } = e.target;
+    // Element wasn't dragged before, initialize it.
+    if (_uuid == undefined) {
+      // Set the target id.
+      // Is this a bad practice?
+      e.target._uuid = this.counter++;
+
+      // Initialize the memory for the element's position.
+      this.items[e.target._uuid] = { element: e.target };
+
+      // Initialize the movements offsets.
+      this.items[e.target._uuid].endX = 0;
+      this.items[e.target._uuid].endY = 0;
+    }
+
+    // Sets the element's id to identify the current dragged item.
+    this.dragItemId = e.target._uuid;
+    // Get the mousedown event position on the client screen.
     const { clientX, clientY } = e;
-    let dragItem = items[dragItemId];
-    // Update the item's current position.
-    // This is the distance that the element moved (d_end - d_start).
-    dragItem.endX = clientX - dragItem.initialX;
-    dragItem.endY = clientY - dragItem.initialY;
-    // Move the item.
-    move(dragItem.endX, dragItem.endY, dragItem.element);
+    // Set the start of the movement to the current position minus the screen offset from the screen.
+    // In future iterations, this subtraction is done so the subtraction in drag() still accounts for
+    // the previous movement.  If not, the movements would not be "cumulative", and every new drag
+    // would translate the element from its original render position. This happens because we move
+    // the element by changing its transform property. We're not "actually" moving the element between positions.
+    this.items[this.dragItemId].initialX = clientX - this.items[this.dragItemId].endX;
+    this.items[this.dragItemId].initialY = clientY - this.items[this.dragItemId].endY;
+    this.shouldDrag = true;
+  }
+
+  /**
+   *
+   * Moves the element whenever the mouse is pressed down and the pointer moves.
+   * @param {MouseEvent} e
+   * @memberof Dragger
+   */
+  drag(e) {
+    if (this.shouldDrag) {
+      e.preventDefault();
+
+      // Get drag position.
+      const { clientX, clientY } = e;
+      let dragItem = this.items[this.dragItemId];
+      // Update the item's current position.
+      // This is the distance that the element moved (d_end - d_start).
+      dragItem.endX = clientX - dragItem.initialX;
+      dragItem.endY = clientY - dragItem.initialY;
+      // Move the item.
+      this.move(dragItem.endX, dragItem.endY, dragItem.element);
+    }
+  }
+
+  /**
+   *
+   * Changes the translate property
+   * @param {Number} x - the x coordinate to translate the element.
+   * @param {Number} y - the x coordinate to translate the element.
+   * @param {Node} el - the element that should be dragged.
+   * @memberof Dragger
+   */
+  move(x, y, el) {
+    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  }
+
+  /**
+   *
+   * Stops dragging shit around.
+   * @param {MouseEvent} e
+   * @memberof Dragger
+   */
+  dragEnd(e) {
+    if (this.shouldDrag) {
+      // End the movement.
+      this.shouldDrag = false;
+    }
   }
 }
 
-function dragEnd(e) {
-  if (shouldDrag) {
-    // End the movement.
-    shouldDrag = false;
-  }
-}
-
-function move(x, y, el) {
-  el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-}
-
-const container = document.querySelector('#list-wrapper');
-container.addEventListener('mousedown', dragStart);
-container.addEventListener('mouseup', dragEnd);
-container.addEventListener('mousemove', drag);
+const Drg = new Dragger('item', '#list-wrapper').init();
