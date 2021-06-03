@@ -13,10 +13,17 @@ class Dragger {
     // Store information of the items movements.
     // The first time an item is dragged (i.e. mousedown), it is saved to memory.
     // When it is dragged around or dropped, its position is updated on this variable.
-    this.items = {};
+    this.element = null;
+    this.x0 = null;
+    this.y0 = null;
+
+    this.initialX = null;
+    this.initialY = null;
     // Counter for uuid.
     this.counter = 0;
     this.container = null;
+
+    // Methods
     this.init = this.init.bind(this);
     this.dragStart = this.dragStart.bind(this);
     this.drag = this.drag.bind(this);
@@ -47,33 +54,27 @@ class Dragger {
     // Prevents from dragging container (should only drag elements).
     if (!e.target.classList.contains(this._draggableClass)) return;
 
-    // Get the event target UUID.
-    let { _uuid } = e.target;
-    // Element wasn't dragged before, initialize it.
-    if (_uuid == undefined) {
-      // Set the target id.
-      // Is this a bad practice?
-      e.target._uuid = this.counter++;
-
-      // Initialize the memory for the element's position.
-      this.items[e.target._uuid] = { element: e.target };
-
-      // Initialize the movements offsets.
-      // this.items[e.target._uuid].endX = 0;
-      // this.items[e.target._uuid].endY = 0;
-    }
-
+    const { offsetLeft, offsetTop } = e.target;
     // Sets the element's id to identify the current dragged item.
-    this.dragItemId = e.target._uuid;
-    // Get the mousedown event position on the client screen.
+    this.element = e.target;
+
+    // Gets the initial left/top offset (x0/y0).
+    // No need to keep track of the values for each item.
+    // The browser always has the latest left/top offsets.
+    // But it'd be useful if we're doing collaborative stuff, I guess.
+    this.x0 = offsetLeft;
+    this.y0 = offsetTop;
+    // this.items[this.dragItemId].x0 = offsetLeft;
+    // this.items[this.dragItemId].y0 = offsetTop;
+
+    // Gets the initial place where the click happened.
+    // This prevents snapping by calculating the deltaX/deltaY in drag().
     const { clientX, clientY } = e;
-    // Set the start of the movement to the current position minus the screen offset from the screen.
-    // In future iterations, this subtraction is done so the subtraction in drag() still accounts for
-    // the previous movement.  If not, the movements would not be "cumulative", and every new drag
-    // would translate the element from its original render position. This happens because we move
-    // the element by changing its transform property. We're not "actually" moving the element between positions.
-    // this.items[this.dragItemId].initialX = clientX; // - this.items[this.dragItemId].endX;
-    // this.items[this.dragItemId].initialY = clientY; // - this.items[this.dragItemId].endY;
+    this.initialX = clientX;
+    this.initialY = clientY;
+    // this.items[this.dragItemId].initialX = clientX;
+    // this.items[this.dragItemId].initialY = clientY;
+
     this.shouldDrag = true;
   }
 
@@ -86,33 +87,31 @@ class Dragger {
   drag(e) {
     if (this.shouldDrag) {
       e.preventDefault();
-
+      // const center = (left, top);
       // Get drag position.
       const { clientX, clientY } = e;
-      let dragItem = this.items[this.dragItemId];
+      // let dragItem = this.items[this.dragItemId];
+
+      // Calculate the amount of movement that happened between the initial mouse event position and the current drag.
+      // Here we get the exact amount of movement that happened, instead of calculating it from the left position.
+      // If this wasn't done, the left of the box would move to the pointer position (ooh, snapping).
+      // const deltaX = clientX - dragItem.initialX;
+      const deltaX = clientX - this.initialX;
+      // const deltaY = clientY - dragItem.initialY;
+      const deltaY = clientY - this.initialY;
+
+      // Calculate the left offset from the initial mouse position.
+      // This is the actual final movement value.
+      // const distanceX = dragItem.x0 + deltaX;
+      const distanceX = this.x0 + deltaX;
+      // const distanceY = dragItem.y0 + deltaY;
+      const distanceY = this.y0 + deltaY;
+
       // Update the item's current position.
       // This is the distance that the element moved (d_end - d_start).
-      this.moveX(clientX - clientX / 6);
-      this.moveY(clientY - clientY / 6);
+      this.moveX(distanceX);
+      this.moveY(distanceY);
     }
-  }
-
-  /**
-   *
-   * Changes the translate property
-   * @param {Number} x - the x coordinate to translate the element.
-   * @param {Number} y - the x coordinate to translate the element.
-   * @param {Node} el - the element that should be dragged.
-   * @memberof Dragger
-   */
-  moveX(x) {
-    const el = this.items[this.dragItemId].element;
-    el.style.left = `${x}px`;
-    el.style.right = `${x}px`;
-  }
-  moveY(y) {
-    const el = this.items[this.dragItemId].element;
-    el.style.top = `${y}px`;
   }
 
   /**
@@ -126,6 +125,25 @@ class Dragger {
       // End the movement.
       this.shouldDrag = false;
     }
+  }
+
+  /**
+   *
+   * Changes the translate property
+   * @param {Number} x - the x coordinate to translate the element.
+   * @param {Number} y - the x coordinate to translate the element.
+   * @param {Node} el - the element that should be dragged.
+   * @memberof Dragger
+   */
+  moveX(x) {
+    // const el = this.items[this.dragItemId].element;
+    const el = this.element;
+    el.style.left = `${x}px`;
+  }
+  moveY(y) {
+    // const el = this.items[this.dragItemId].element;
+    const el = this.element;
+    el.style.top = `${y}px`;
   }
 }
 
