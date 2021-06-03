@@ -5,23 +5,19 @@ class Dragger {
     this._containerSelector = containerSelector;
     // Inject class for the draggable items.
     this._draggableClass = draggableClass;
+    // Container that wraps the draggables.
+    this.container = null;
 
-    // The id of the current item being dragged.
-    this.dragItemId = null;
     // Flag to check if a drag is currently happening.
     this.shouldDrag = false;
-    // Store information of the items movements.
-    // The first time an item is dragged (i.e. mousedown), it is saved to memory.
-    // When it is dragged around or dropped, its position is updated on this variable.
+    // The element that is being dragged.
     this.element = null;
+    // The initial left/top DOM values (offsetLeft/offsetTop).
     this.x0 = null;
     this.y0 = null;
-
+    // The initial mousedown event (x, y) coordinates.
     this.initialX = null;
     this.initialY = null;
-    // Counter for uuid.
-    this.counter = 0;
-    this.container = null;
 
     // Methods
     this.init = this.init.bind(this);
@@ -51,29 +47,26 @@ class Dragger {
    * @memberof Dragger
    */
   dragStart(e) {
-    // Prevents from dragging container (should only drag elements).
+    // Prevents from dragging container (should only drag child elements).
     if (!e.target.classList.contains(this._draggableClass)) return;
 
-    const { offsetLeft, offsetTop } = e.target;
-    // Sets the element's id to identify the current dragged item.
-    this.element = e.target;
+    const { target, offsetLeft, offsetTop } = e;
+    // Sets the element that will be dragged.
+    this.element = target;
 
-    // Gets the initial left/top offset (x0/y0).
     // No need to keep track of the values for each item.
     // The browser always has the latest left/top offsets.
-    // But it'd be useful if we're doing collaborative stuff, I guess.
+    // But I guess it'd be useful if we're doing collaborative stuff.
+
+    // Gets the initial left/top offset (x0/y0).
     this.x0 = offsetLeft;
     this.y0 = offsetTop;
-    // this.items[this.dragItemId].x0 = offsetLeft;
-    // this.items[this.dragItemId].y0 = offsetTop;
 
     // Gets the initial place where the click happened.
     // This prevents snapping by calculating the deltaX/deltaY in drag().
     const { clientX, clientY } = e;
     this.initialX = clientX;
     this.initialY = clientY;
-    // this.items[this.dragItemId].initialX = clientX;
-    // this.items[this.dragItemId].initialY = clientY;
 
     this.shouldDrag = true;
   }
