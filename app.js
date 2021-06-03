@@ -20,7 +20,8 @@ class Dragger {
     this.init = this.init.bind(this);
     this.dragStart = this.dragStart.bind(this);
     this.drag = this.drag.bind(this);
-    this.move = this.move.bind(this);
+    this.moveX = this.moveX.bind(this);
+    this.moveY = this.moveY.bind(this);
     this.dragEnd = this.dragEnd.bind(this);
   }
 
@@ -58,8 +59,8 @@ class Dragger {
       this.items[e.target._uuid] = { element: e.target };
 
       // Initialize the movements offsets.
-      this.items[e.target._uuid].endX = 0;
-      this.items[e.target._uuid].endY = 0;
+      // this.items[e.target._uuid].endX = 0;
+      // this.items[e.target._uuid].endY = 0;
     }
 
     // Sets the element's id to identify the current dragged item.
@@ -71,8 +72,8 @@ class Dragger {
     // the previous movement.  If not, the movements would not be "cumulative", and every new drag
     // would translate the element from its original render position. This happens because we move
     // the element by changing its transform property. We're not "actually" moving the element between positions.
-    this.items[this.dragItemId].initialX = clientX - this.items[this.dragItemId].endX;
-    this.items[this.dragItemId].initialY = clientY - this.items[this.dragItemId].endY;
+    // this.items[this.dragItemId].initialX = clientX; // - this.items[this.dragItemId].endX;
+    // this.items[this.dragItemId].initialY = clientY; // - this.items[this.dragItemId].endY;
     this.shouldDrag = true;
   }
 
@@ -91,10 +92,8 @@ class Dragger {
       let dragItem = this.items[this.dragItemId];
       // Update the item's current position.
       // This is the distance that the element moved (d_end - d_start).
-      dragItem.endX = clientX - dragItem.initialX;
-      dragItem.endY = clientY - dragItem.initialY;
-      // Move the item.
-      this.move(dragItem.endX, dragItem.endY, dragItem.element);
+      this.moveX(clientX - clientX / 6);
+      this.moveY(clientY - clientY / 6);
     }
   }
 
@@ -106,8 +105,14 @@ class Dragger {
    * @param {Node} el - the element that should be dragged.
    * @memberof Dragger
    */
-  move(x, y, el) {
-    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  moveX(x) {
+    const el = this.items[this.dragItemId].element;
+    el.style.left = `${x}px`;
+    el.style.right = `${x}px`;
+  }
+  moveY(y) {
+    const el = this.items[this.dragItemId].element;
+    el.style.top = `${y}px`;
   }
 
   /**

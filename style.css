@@ -6,12 +6,14 @@
   user-select: none;
   padding: 30px;
   border: 2px solid white;
+  position: absolute;
 }
 .item:hover {
   box-shadow: -2px -1px 0 1px white;
 }
 
 #list-wrapper {
+      position: relative;
       width: 100%;
       height: 400px;
       background-color: #333;
